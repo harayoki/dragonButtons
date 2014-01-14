@@ -1,11 +1,20 @@
-# Build and Release Folders
+﻿.settings/
+.metadata/
 bin/
 bin-debug/
 bin-release/
+bin-release-temp/
 
-# Other files and folders
-.settings/
+~*
+*~
+*.p12
+*.mobileprovision
+*.air
+*.ipa
+*.apk
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+リカバリ_*
+
+# lib project for develop
+#feathers1.2.0/
+
