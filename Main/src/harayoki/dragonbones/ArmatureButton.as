@@ -180,6 +180,7 @@ package harayoki.dragonbones
 						//STATE_DISABLEDのアニメが用意されていない場合は半透明にする
 						DisplayObject(_armature.display).alpha = 0.5;
 						_armature.animation.stop();
+						_lastAnimationName = "";//こうしておかないと別のStateに変化した際に止まったままになる
 					}
 					else if(animationName != _lastAnimationName)
 					{
@@ -240,6 +241,7 @@ package harayoki.dragonbones
 				}
 				slot.zOrder = len -1 ;
 				(slot.display as DisplayObject).touchable = true;
+				_hitAreaObject.alpha = 0.0;//validateに処理を任せると一瞬見えるのでここでも消す
 				if(_hitAreaObject as Image) 
 				{
 					(_hitAreaObject as Image).color = 0xff00ff;
