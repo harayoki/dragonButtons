@@ -9,7 +9,12 @@ package harayoki
 	import dragonBones.animation.WorldClock;
 	import dragonBones.factorys.StarlingFactory;
 	
+	import harayoki.dragonbones.ArmatureButton;
+	import harayoki.dragonbones.DragonBonesButtonUtil;
+	import harayoki.dragonbones.DragonBonesUtil;
+	
 	import starling.core.Starling;
+	import starling.display.DisplayObject;
 	import starling.display.Sprite;
 	import starling.events.Event;
 	import starling.utils.AssetManager;
@@ -81,7 +86,7 @@ package harayoki
 			_assetManager.verbose = true;
 			_assetManager.enqueue("assets/textures.png");
 			_assetManager.enqueue("assets/textures.xml");
-			//_assetManager.enqueue("assets/hoge.dbswf");
+			_assetManager.enqueue("assets/buttonSetA.dbswf");
 			_assetManager.loadQueue(function(num:Number):void{
 				if(num==1.0)
 				{
@@ -102,15 +107,33 @@ package harayoki
 			
 			function handleDragonComplete():void
 			{
-//				_bg = _factory.buildArmature("ANIM_ALL");
-//				DragonBonesUtil.traceArmature(_bg);
-//				WorldClock.clock.add(_bg);
-//				_bg.animation.gotoAndPlay("main");
-//				self.addChild(_bg.display as DisplayObject);
+				_bg = _factory.buildArmature("ButtonA");
+				DragonBonesUtil.traceArmature(_bg);
+				WorldClock.clock.add(_bg);
+				_bg.animation.gotoAndPlay("_up");
+				(_bg.display as DisplayObject).x = 100;
+				(_bg.display as DisplayObject).y = 100;
+				self.addChild(_bg.display as DisplayObject);
+				
+				
+				//var btn:ArmatureButton = DragonBonesButtonUtil.createButton(_bg);
+				var btn:ArmatureButton = new ArmatureButton();
+				btn.applyArmature(_bg);
+				btn.onTriggered = function():void
+				{
+						
+				}
+				btn.onLongPress= function():void
+				{
+					
+				}
+				btn.onLongPress = function():void{
+					
+				}
 			}
 			
 			_factory.addEventListener(Event.COMPLETE, handleDragonComplete);
-			//_factory.parseData(_assetManager.getByteArray("hoge"));
+			_factory.parseData(_assetManager.getByteArray("buttonSetA"));
 			
 			stage.addEventListener(Event.ENTER_FRAME,handleEnterFrame);
 			
