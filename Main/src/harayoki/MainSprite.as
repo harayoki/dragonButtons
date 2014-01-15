@@ -10,8 +10,6 @@ package harayoki
 	import dragonBones.factorys.StarlingFactory;
 	
 	import harayoki.dragonbones.ArmatureButton;
-	import harayoki.dragonbones.DragonBonesButtonUtil;
-	import harayoki.dragonbones.DragonBonesUtil;
 	
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
@@ -35,7 +33,8 @@ package harayoki
 		
 		private var _assetManager:AssetManager;
 		private var _factory:StarlingFactory;
-		private var _bg:Armature;
+		private var _buttonA:Armature;
+		private var _buttonB:Armature;
 		
 		/**
 		 * ここから動作スタート
@@ -107,29 +106,44 @@ package harayoki
 			
 			function handleDragonComplete():void
 			{
-				_bg = _factory.buildArmature("ButtonA");
-				DragonBonesUtil.traceArmature(_bg);
-				WorldClock.clock.add(_bg);
-				_bg.animation.gotoAndPlay("_up");
-				(_bg.display as DisplayObject).x = 100;
-				(_bg.display as DisplayObject).y = 100;
-				self.addChild(_bg.display as DisplayObject);
+				_buttonA = _factory.buildArmature("ButtonA");
+				WorldClock.clock.add(_buttonA);
+				(_buttonA.display as DisplayObject).scaleX = (_buttonA.display as DisplayObject).scaleY = 1.5;
+				(_buttonA.display as DisplayObject).x = 320 - (_buttonA.display as DisplayObject).width/2;
+				(_buttonA.display as DisplayObject).y = 200;
+				self.addChild(_buttonA.display as DisplayObject);
 				
+				_buttonB = _factory.buildArmature("ButtonB");
+				WorldClock.clock.add(_buttonB);
+				(_buttonB.display as DisplayObject).x = 320;
+				(_buttonB.display as DisplayObject).y = 550;
+				self.addChild(_buttonB.display as DisplayObject);
+
+								
+				var btnA:ArmatureButton = new ArmatureButton(_buttonA);
+				var btnB:ArmatureButton = new ArmatureButton(_buttonB);
 				
-				//var btn:ArmatureButton = DragonBonesButtonUtil.createButton(_bg);
-				var btn:ArmatureButton = new ArmatureButton();
-				btn.applyArmature(_bg);
-				btn.onTriggered = function():void
+				btnA.onTriggered = function():void
 				{
-						
-				}
-				btn.onLongPress= function():void
-				{
+					trace("A clicked");
+					btnA.freeze = true;
+					_starling.juggler.delayCall(function():void{
+						btnA.freeze = false;
+						btnA.reset();
+					},4);
+					
+					btnB.disabled = !btnB.disabled;
 					
 				}
-				btn.onLongPress = function():void{
+					
+				btnB.onTriggered = function():void
+				{
+					trace("B clicked");
+					
+					btnA.disabled = !btnA.disabled;
 					
 				}
+					
 			}
 			
 			_factory.addEventListener(Event.COMPLETE, handleDragonComplete);
