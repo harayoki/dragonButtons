@@ -173,13 +173,14 @@ package harayoki.dragonbones
 					armatureSprite.alpha = 1.0;
 					if(_currentState == STATE_DISABLED && !animationName)
 					{
+						//STATE_DISABLEDのアニメが用意されていない場合は半透明にする
 						armatureSprite.alpha = 0.5;
 						_armature.animation.stop();
 					}
 					else if(animationName != _lastAnimationName)
 					{
 						_lastAnimationName = animationName;
-						trace(_lastAnimationName);
+						//trace(_lastAnimationName);
 						_armature.animation.gotoAndPlay(_lastAnimationName);
 					}
 				},0);
@@ -220,7 +221,7 @@ package harayoki.dragonbones
 			{
 				var animation:String = animations[i];
 				_animationInfo[animation] = animation;
-				trace(animation);
+				//trace(animation);
 			}
 			
 			//STATE_NORMALが基本ですが、FlasherにとってMovieClipButtonは"_up"ラベルが基本になるので、STATE_NORMALが無い場合はUPを使います
