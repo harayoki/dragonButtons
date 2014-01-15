@@ -36,6 +36,9 @@ package harayoki.dragonbones
 		protected var _invalidateId:uint = 0;		
 		protected var _hitAreaObject:DisplayObject;		
 		protected var _debugHitArea:Boolean;
+		
+		//自由に使えるデータ
+		public var userData:*;
 
 		/**
 		 * クリック時のハンドラ 
@@ -52,13 +55,14 @@ package harayoki.dragonbones
 		 */
 		public var onLongPress:Function;		
 		
-		public function ArmatureButton(armature:Armature=null)
+		public function ArmatureButton(armature:Armature=null,userData:*=null)
 		{			
 			_animationInfo = {};
 			if(armature)
 			{
 				applyArmature(armature);
 			}
+			this.userData = userData;
 		}
 		
 		/**
@@ -78,6 +82,7 @@ package harayoki.dragonbones
 				flash.utils.clearTimeout(_invalidateId);
 				_invalidateId = 0;
 			}
+			userData = null;
 		}
 		
 		

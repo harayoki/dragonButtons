@@ -34,7 +34,8 @@ package harayoki
 		private var _assetManager:AssetManager;
 		private var _factory:StarlingFactory;
 		private var _armatureA:Armature;
-		private var _armatureB:Armature;
+		private var _armatureB1:Armature;
+		private var _armatureB2:Armature;
 
 		/**
 		 * ここから動作スタート
@@ -98,7 +99,11 @@ package harayoki
 		{
 	
 			var self:MainSprite = this;
-						
+			
+			_factory.addEventListener(Event.COMPLETE, handleDragonComplete);
+			_factory.parseData(_assetManager.getByteArray("buttonSetA"));
+			stage.addEventListener(Event.ENTER_FRAME,handleEnterFrame);
+			
 			function handleEnterFrame(ev:Event):void
 			{
 				WorldClock.clock.advanceTime(-1);
@@ -106,53 +111,63 @@ package harayoki
 			
 			function handleDragonComplete():void
 			{
-				_armatureA = _factory.buildArmature("ButtonA");
-				WorldClock.clock.add(_armatureA);
-				(_armatureA.display as DisplayObject).scaleX = (_armatureA.display as DisplayObject).scaleY = 1.5;
-				(_armatureA.display as DisplayObject).x = 320 - (_armatureA.display as DisplayObject).width/2;
-				(_armatureA.display as DisplayObject).y = 200;
-				self.addChild(_armatureA.display as DisplayObject);
-				
-				_armatureB = _factory.buildArmature("ButtonB");
-				(_armatureB.display as DisplayObject).scaleX = (_armatureB.display as DisplayObject).scaleY = 1.5;
-				WorldClock.clock.add(_armatureB);
-				(_armatureB.display as DisplayObject).x = 320;
-				(_armatureB.display as DisplayObject).y = 550;
-				self.addChild(_armatureB.display as DisplayObject);
-
 								
-				var btnA:ArmatureButton = new ArmatureButton(_armatureA);
-				var btnB:ArmatureButton = new ArmatureButton(_armatureB);				
+				function locateArmature(arm:Armature,xx:int,yy:int,scale:Number=0):void
+				{
+					var dobj:DisplayObject = arm.display as DisplayObject;
+					WorldClock.clock.add(arm);
+					dobj.scaleX = dobj.scaleY = scale;
+					dobj.x = xx;
+					dobj.y = yy;
+					self.addChild(dobj);
+				}
+				
+				_armatureA = _factory.buildArmature("ButtonA");
+				locateArmature(_armatureA,320,300,1.5);
+				
+				_armatureB1 = _factory.buildArmature("ButtonB");
+				locateArmature(_armatureB1,320,550,2.0);
+				
+				_armatureB2 = _factory.buildArmature("ButtonB");
+				locateArmature(_armatureB2,320,650,2.0);
+				
+				_armatureB2.getSlot("text").childArmature.getSlot("text").childArmature.animation.gotoAndPlay("no");
+								
+				var btnA:ArmatureButton = new ArmatureButton(_armatureA,"カボチャ");
+				var btnB1:ArmatureButton = new ArmatureButton(_armatureB1,"yes");				
+				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,"no");				
 				btnA.debugHitArea = false;
-				btnB.debugHitArea = false;
+				btnB1.debugHitArea = false;
+				btnB2.debugHitArea = false;
 				
 				btnA.onTriggered = function():void
 				{
-					trace("A clicked");
+					trace(btnA.userData+" clicked");					
 					btnA.freeze = true;
 					_starling.juggler.delayCall(function():void{
 						btnA.freeze = false;
 						btnA.reset();
+						btnB1.disabled = false;
+						btnB2.disabled = false;
 					},4);
 					
-					btnB.disabled = !btnB.disabled;
-					
+					btnB1.disabled = true;
+					btnB2.disabled = true;	
 				}
 					
-				btnB.onTriggered = function():void
+				btnB1.onTriggered = function():void
 				{
-					trace("B clicked");
-					
-					btnA.disabled = !btnA.disabled;
-					
+					trace(btnB1.userData+" clicked");					
+					btnA.disabled = false;
+				}
+				btnB2.onTriggered = function():void
+				{
+					trace(btnB2.userData+" clicked");					
+					btnA.disabled = true;
 				}
 					
 			}
-			
-			_factory.addEventListener(Event.COMPLETE, handleDragonComplete);
-			_factory.parseData(_assetManager.getByteArray("buttonSetA"));
-			
-			stage.addEventListener(Event.ENTER_FRAME,handleEnterFrame);
+
 			
 		}
 	}
