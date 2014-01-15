@@ -33,9 +33,9 @@ package harayoki
 		
 		private var _assetManager:AssetManager;
 		private var _factory:StarlingFactory;
-		private var _buttonA:Armature;
-		private var _buttonB:Armature;
-		
+		private var _armatureA:Armature;
+		private var _armatureB:Armature;
+
 		/**
 		 * ここから動作スタート
 		 */
@@ -62,7 +62,7 @@ package harayoki
 		private function _handleAddedToStage():void
 		{
 			stage.color = _flashStage.color;
-			stage.alpha = 0.999999;
+			stage.alpha = 0.999999;//for paerformance
 			stage.addEventListener(Event.RESIZE,_handleStageResize);
 			_starling.start();		
 			
@@ -106,22 +106,25 @@ package harayoki
 			
 			function handleDragonComplete():void
 			{
-				_buttonA = _factory.buildArmature("ButtonA");
-				WorldClock.clock.add(_buttonA);
-				(_buttonA.display as DisplayObject).scaleX = (_buttonA.display as DisplayObject).scaleY = 1.5;
-				(_buttonA.display as DisplayObject).x = 320 - (_buttonA.display as DisplayObject).width/2;
-				(_buttonA.display as DisplayObject).y = 200;
-				self.addChild(_buttonA.display as DisplayObject);
+				_armatureA = _factory.buildArmature("ButtonA");
+				WorldClock.clock.add(_armatureA);
+				(_armatureA.display as DisplayObject).scaleX = (_armatureA.display as DisplayObject).scaleY = 1.5;
+				(_armatureA.display as DisplayObject).x = 320 - (_armatureA.display as DisplayObject).width/2;
+				(_armatureA.display as DisplayObject).y = 200;
+				self.addChild(_armatureA.display as DisplayObject);
 				
-				_buttonB = _factory.buildArmature("ButtonB");
-				WorldClock.clock.add(_buttonB);
-				(_buttonB.display as DisplayObject).x = 320;
-				(_buttonB.display as DisplayObject).y = 550;
-				self.addChild(_buttonB.display as DisplayObject);
+				_armatureB = _factory.buildArmature("ButtonB");
+				(_armatureB.display as DisplayObject).scaleX = (_armatureB.display as DisplayObject).scaleY = 1.5;
+				WorldClock.clock.add(_armatureB);
+				(_armatureB.display as DisplayObject).x = 320;
+				(_armatureB.display as DisplayObject).y = 550;
+				self.addChild(_armatureB.display as DisplayObject);
 
 								
-				var btnA:ArmatureButton = new ArmatureButton(_buttonA);
-				var btnB:ArmatureButton = new ArmatureButton(_buttonB);
+				var btnA:ArmatureButton = new ArmatureButton(_armatureA);
+				var btnB:ArmatureButton = new ArmatureButton(_armatureB);				
+				btnA.debugHitArea = false;
+				btnB.debugHitArea = false;
 				
 				btnA.onTriggered = function():void
 				{

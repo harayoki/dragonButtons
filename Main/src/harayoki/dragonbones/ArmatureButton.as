@@ -6,7 +6,10 @@ package harayoki.dragonbones
 	import flash.utils.setTimeout;
 	
 	import dragonBones.Armature;
+	import dragonBones.Slot;
 	
+	import starling.display.DisplayObject;
+	import starling.display.Image;
 	import starling.display.Sprite;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
@@ -30,9 +33,10 @@ package harayoki.dragonbones
 		protected var _animationInfo:Object;
 		protected var _triggered:Boolean = false;
 		protected var _currentState:String = null;
-		protected var _hitTestRect:Rectangle;
 		protected var _invalidateId:uint = 0;		
-		
+		protected var _hitAreaObject:DisplayObject;		
+		protected var _debugHitArea:Boolean;
+
 		/**
 		 * クリック時のハンドラ 
 		 */
@@ -68,7 +72,7 @@ package harayoki.dragonbones
 			onTriggered = null;
 			onChange = null;
 			onLongPress = null;
-			_hitTestRect = null;
+			_hitAreaObject = null;
 			if(_invalidateId!=0)
 			{
 				flash.utils.clearTimeout(_invalidateId);
@@ -89,7 +93,7 @@ package harayoki.dragonbones
 		{
 			if(_freeze == value) return;
 			_freeze = value;			
-			var sp:Sprite = armatureSprite;
+			var sp:DisplayObject = hitAreaObject;
 			if(sp)
 			{
 				_resetTouchable();
@@ -113,18 +117,18 @@ package harayoki.dragonbones
 			invalidate();
 		}
 		
-		public function playAnimationDirect(animationName:String):void
+		public function get debugHitArea():Boolean
 		{
-			if(_armature && _animationInfo[animationName])
-			{
-				_lastAnimationName = animationName;
-				_armature.animation.gotoAndPlay(_lastAnimationName);
-			}
+			return _debugHitArea;
 		}
 		
-		/**
-		 * @private
-		 */
+		public function set debugHitArea(value:Boolean):void
+		{
+			if(_debugHitArea == value) return;
+			_debugHitArea = value;
+			invalidate();
+		}		
+
 		protected var _stateNames:Vector.<String> = new <String> [ STATE_NORMAL, STATE_UP, STATE_DOWN, STATE_OVER, STATE_DISABLED ];
 		
 		protected function get stateNames():Vector.<String>
@@ -170,11 +174,11 @@ package harayoki.dragonbones
 				_invalidateId = flash.utils.setTimeout(function():void{
 					_invalidateId = 0;
 					var animationName:String = _animationInfo[_currentState];
-					armatureSprite.alpha = 1.0;
+					DisplayObject(_armature.display).alpha = 1.0;
 					if(_currentState == STATE_DISABLED && !animationName)
 					{
 						//STATE_DISABLEDのアニメが用意されていない場合は半透明にする
-						armatureSprite.alpha = 0.5;
+						DisplayObject(_armature.display).alpha = 0.5;
 						_armature.animation.stop();
 					}
 					else if(animationName != _lastAnimationName)
@@ -183,6 +187,12 @@ package harayoki.dragonbones
 						//trace(_lastAnimationName);
 						_armature.animation.gotoAndPlay(_lastAnimationName);
 					}
+					
+					if(_hitAreaObject && _hitAreaObject != _armature.display)
+					{
+						_hitAreaObject.alpha = _debugHitArea ? 0.5 : 0.0;
+					}
+					
 				},0);
 			}
 			
@@ -203,18 +213,45 @@ package harayoki.dragonbones
 			currentState = STATE_NORMAL;
 		}
 		
-		protected function get armatureSprite():Sprite
+		protected function get hitAreaObject():DisplayObject
 		{
+			if(_hitAreaObject) return _hitAreaObject;			
 			if(!_armature) return null;
-			var sp:Sprite = _armature.display as Sprite;
-			return sp;
+			
+			_hitAreaObject = _armature.display as Sprite;			
+			
+			var slot:Slot = _armature.getSlot("hitArea");
+			if(!slot)
+			{
+				return _hitAreaObject;
+			}
+			var dobj:DisplayObject = slot.display as DisplayObject;
+			if(dobj)
+			{				
+				//hitAreaオブジェクトが見つかったので最前面に持ってくる
+				//他の物はタッチに反応させない
+				_hitAreaObject = dobj;
+				var slots:Vector.<Slot> = _armature.getSlots();
+				var len:int = slots.length;
+				for(var i:int=0; i<len;i++)
+				{
+					var theSlot:Slot = slots[i];
+					(theSlot.display as DisplayObject).touchable = false;
+				}
+				slot.zOrder = len -1 ;
+				(slot.display as DisplayObject).touchable = true;
+				if(_hitAreaObject as Image) 
+				{
+					(_hitAreaObject as Image).color = 0xff00ff;
+				}
+			}
+			return _hitAreaObject;
 		}
 		
 		protected function _initArmature():void
 		{
-			var sp:Sprite = armatureSprite;
-			if(!sp) return;
-			sp.addEventListener(TouchEvent.TOUCH,_handleTouch);
+			if(!hitAreaObject) return;
+			hitAreaObject.addEventListener(TouchEvent.TOUCH,_handleTouch);
 			_resetTouchable();
 			var animations:Vector.<String> = _armature.animation.animationList;
 			for(var i:int=0;i<animations.length;i++)
@@ -246,27 +283,25 @@ package harayoki.dragonbones
 			{
 				_animationInfo[STATE_DOWN] = _animationInfo[STATE_NORMAL]
 			}
-			
-			_hitTestRect = sp.bounds;
 			currentState = STATE_NORMAL;
 		}
 		
 		protected function _resetTouchable():void
 		{
-			armatureSprite.touchable = (!_freeze && !_disabled);
+			hitAreaObject.touchable = (!_freeze && !_disabled);
 		}
 		
 		protected function _cleanArmature():void
 		{
 			_animationInfo = {};
-			var sp:Sprite = armatureSprite;
+			var sp:DisplayObject = hitAreaObject;
 			if(!sp) return;
 			sp.removeEventListener(TouchEvent.TOUCH,_handleTouch);
 		}
 		
 		protected function _handleTouch(ev:TouchEvent):void
 		{
-			var touch:Touch = ev.getTouch(armatureSprite);
+			var touch:Touch = ev.getTouch(hitAreaObject);
 			if(!touch)
 			{
 				currentState = STATE_NORMAL;
@@ -300,9 +335,12 @@ package harayoki.dragonbones
 		
 		protected function _hitTest(touch:Touch):Boolean
 		{
-			touch.getLocation(armatureSprite.parent,HELPER_POINT);
-			//trace(_hitTestRect,HELPER_POINT);
-			return _hitTestRect.containsPoint(HELPER_POINT);
+			//stageが実際にクリックされる時まで存在するかわからないのと
+			//対象DisplayObjectの大きさがどうもただしくとれないのでここで毎回rectを取得する スピード的には遅いかもしれないが hitAreaObjectの移動にも耐えられる。。
+			var rect:Rectangle = hitAreaObject.getBounds(hitAreaObject.stage);
+			touch.getLocation(hitAreaObject.stage,HELPER_POINT);
+			//trace(rect,HELPER_POINT);
+			return rect.containsPoint(HELPER_POINT);
 		}
 
 	}
