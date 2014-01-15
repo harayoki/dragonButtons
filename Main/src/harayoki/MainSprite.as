@@ -123,13 +123,13 @@ package harayoki
 				}
 				
 				_armatureA = _factory.buildArmature("ButtonA");
-				locateArmature(_armatureA,320,300,1.5);
+				locateArmature(_armatureA,320,350,1.5);
 				
 				_armatureB1 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB1,320,550,2.0);
+				locateArmature(_armatureB1,320,600,2.0);
 				
 				_armatureB2 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB2,320,650,2.0);
+				locateArmature(_armatureB2,320,700,2.0);
 				
 				_armatureB2.getSlot("text").childArmature.getSlot("text").childArmature.animation.gotoAndPlay("no");
 								
