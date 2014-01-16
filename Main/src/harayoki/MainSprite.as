@@ -125,7 +125,7 @@ package harayoki
 				}
 				
 				_armatureA = _factory.buildArmature("ButtonA");
-				locateArmature(_armatureA,320,300,1.5);
+				locateArmature(_armatureA,320,250,1.5);
 				
 				_armatureB1 = _factory.buildArmature("ButtonB");
 				locateArmature(_armatureB1,320,500,2.0);
@@ -154,6 +154,7 @@ package harayoki
 				
 				btnB3.isToggle = true;
 				btnB4.isLongPressEnabled = true;
+				btnB4.keepDownStateOnRollOut = false;
 				
 				btnB2.gotoAndPlayBySlotName("labels","no");
 				btnB3.gotoAndPlayBySlotName("labels","toggle");
