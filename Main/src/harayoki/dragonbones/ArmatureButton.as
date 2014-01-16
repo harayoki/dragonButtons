@@ -32,14 +32,14 @@ package harayoki.dragonbones
 		
 		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];		
 		protected var _armature:Armature;
+		protected var _animationInfo:Object;
+		protected var _hitAreaObject:DisplayObject;		
 		protected var _freeze:Boolean = false;
 		protected var _disabled:Boolean = false;
 		protected var _lastAnimationName:String = null;
-		protected var _animationInfo:Object;
 		protected var _triggered:Boolean = false;
 		protected var _currentState:String = null;
 		protected var _invalidateId:uint = 0;		
-		protected var _hitAreaObject:DisplayObject;		
 		protected var _debugHitArea:Boolean;
 		protected var _touchPointID:int = -1;
 		protected var _autoDestruct:Boolean = false;
@@ -100,6 +100,7 @@ package harayoki.dragonbones
 			onChange = null;
 			onLongPress = null;
 			_hitAreaObject = null;
+			_stateNames = null;
 			if(_invalidateId!=0)
 			{
 				flash.utils.clearTimeout(_invalidateId);
