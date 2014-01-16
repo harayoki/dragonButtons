@@ -26,14 +26,13 @@ package harayoki.dragonbones
 		protected static const HIT_AREA_DISPLAYOBJECT_NAME:String = "hitArea";
 		
 		protected static const STATE_UP:String = "_up";
-		protected static const STATE_TRIGGER:String = "_trigger";
-		protected static const STATE_DOWN:String = "_down";
 		protected static const STATE_OVER:String = "_over";
+		protected static const STATE_DOWN:String = "_down";
 		protected static const STATE_DISABLED:String = "_disabled";
-		
-
+		protected static const STATE_TRIGGER:String = "_trigger";
+		protected static const STATE_LONGPRESS:String = "_longpress";
 	
-		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];		
+		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED, STATE_LONGPRESS ];		
 		protected var _armature:Armature;
 		protected var _animationInfo:Object;
 		protected var _hitAreaObject:DisplayObject;		
@@ -46,8 +45,11 @@ package harayoki.dragonbones
 		protected var _debugHitArea:Boolean;
 		protected var _touchPointID:int = -1;
 		protected var _autoDestruct:Boolean = false;
-		protected var _isSelected:Boolean = false;
-		
+		protected var _isSelected:Boolean = false;		
+		protected var _isLongPressEnabled:Boolean = false;
+		protected var _touchBeginTime:int;
+		protected var _hasLongPressed:Boolean;
+				
 		/**
 		 * ユーザが自由に使えるデータ
 		 */
@@ -78,6 +80,11 @@ package harayoki.dragonbones
 		 * トグルモードで動かすか 
 		 */
 		public var isToggle:Boolean = false;
+		
+		/**
+		 * 長押しと判定される秒数
+		 */
+		public var longPressDuration:Number = 0.3;
 				
 		/**
 		 * @param armature ボタン化するアーマーチャー
@@ -196,6 +203,26 @@ package harayoki.dragonbones
 			_isSelected = value;
 			onChange && onChange();
 		}
+
+		/**
+		 * ボタン長押しを
+		 */
+		public function get isLongPressEnabled():Boolean
+		{
+			return _isLongPressEnabled;
+		}
+		
+		/**
+		 * @private
+		 */
+		public function set isLongPressEnabled(value:Boolean):void
+		{
+			_isLongPressEnabled = value;
+			if(!value && hitAreaObject)
+			{
+				hitAreaObject.removeEventListener(Event.ENTER_FRAME, _handleLongPressEnterFrame);
+			}
+		}		
 		
 		//現在のState
 		protected function get currentState():String
@@ -287,6 +314,12 @@ package harayoki.dragonbones
 			_touchPointID = -1;
 			isSelected = false;
 			currentState = STATE_UP;
+		}
+		
+		protected function _resetTouchState():void
+		{
+			_touchPointID = -1;
+			if(hitAreaObject) hitAreaObject.removeEventListener(Event.ENTER_FRAME,_handleLongPressEnterFrame);
 		}
 		
 		/**
@@ -390,6 +423,11 @@ package harayoki.dragonbones
 			{
 				_animationInfo[STATE_DOWN] = _animationInfo[STATE_UP]
 			}
+			//longpressが見当たらない場合はdownを使う
+			if(!_animationInfo[STATE_LONGPRESS])
+			{
+				_animationInfo[STATE_LONGPRESS] = _animationInfo[STATE_DOWN];
+			}
 			
 			resetButton();
 			
@@ -398,6 +436,18 @@ package harayoki.dragonbones
 		protected function _handleRemoveFromStage(ev:Event):void
 		{
 			destruct();
+		}
+		
+		protected function _handleLongPressEnterFrame(ev:Event):void
+		{
+			var accumulatedTime:Number = (flash.utils.getTimer() - _touchBeginTime) / 1000;
+			if(accumulatedTime >= longPressDuration)
+			{
+				hitAreaObject.removeEventListener(Event.ENTER_FRAME, _handleLongPressEnterFrame);
+				_hasLongPressed = true;
+				onLongPress && onLongPress();
+				currentState = STATE_LONGPRESS;
+			}
 		}
 		
 		protected function _resetTouchable():void
@@ -413,9 +463,10 @@ package harayoki.dragonbones
 			{
 				if(_autoDestruct) DisplayObject(_armature.display).removeEventListener(Event.REMOVED_FROM_STAGE,_handleRemoveFromStage);				
 				hitAreaObject.removeEventListener(TouchEvent.TOUCH,_handleTouch);
+				hitAreaObject.removeEventListener(Event.ENTER_FRAME, _handleLongPressEnterFrame);
 			}			
 		}
-		
+
 		protected function _handleTouch(ev:TouchEvent):void
 		{
 			var touch:Touch;
@@ -424,20 +475,20 @@ package harayoki.dragonbones
 				touch = ev.getTouch(hitAreaObject, TouchPhase.BEGAN);
 				if(touch)
 				{
-					this.currentState = STATE_DOWN;
+					currentState = STATE_DOWN;
 					_touchPointID = touch.id;
-//					if(this._isLongPressEnabled)
-//					{
-//						this._touchBeginTime = getTimer();
-//						this._hasLongPressed = false;
-//						this.addEventListener(Event.ENTER_FRAME, longPress_enterFrameHandler);
-//					}
+					if(_isLongPressEnabled)
+					{
+						_touchBeginTime = flash.utils.getTimer();
+						_hasLongPressed = false;
+						hitAreaObject.addEventListener(Event.ENTER_FRAME, _handleLongPressEnterFrame);
+					}
 					return;
 				}
 				touch = ev.getTouch(hitAreaObject, TouchPhase.HOVER);
 				if(touch)
 				{
-					this.currentState = STATE_OVER;
+					currentState = STATE_OVER;
 					return;
 				}
 				
@@ -468,14 +519,14 @@ package harayoki.dragonbones
 			}
 			else if(touch.phase == TouchPhase.ENDED)
 			{
-				_touchPointID = -1;
-				if(isHit)
+				_resetTouchState();
+				if(!_hasLongPressed && isHit)
 				{
 					if(isToggle)
 					{
 						isSelected = !isSelected;
 					}
-					currentState = STATE_TRIGGER;
+					currentState = _isLongPressEnabled ? STATE_UP : STATE_TRIGGER;
 					onTriggered && onTriggered();
 				}
 				else

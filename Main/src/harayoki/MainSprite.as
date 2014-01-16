@@ -37,6 +37,7 @@ package harayoki
 		private var _armatureB1:Armature;
 		private var _armatureB2:Armature;
 		private var _armatureB3:Armature;
+		private var _armatureB4:Armature;
 
 		/**
 		 * ここから動作スタート
@@ -124,32 +125,39 @@ package harayoki
 				}
 				
 				_armatureA = _factory.buildArmature("ButtonA");
-				locateArmature(_armatureA,320,350,1.5);
+				locateArmature(_armatureA,320,300,1.5);
 				
 				_armatureB1 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB1,320,600,2.0);
+				locateArmature(_armatureB1,320,500,2.0);
 				
 				_armatureB2 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB2,320,700,2.0);
+				locateArmature(_armatureB2,320,600,2.0);
 				
 				_armatureB3 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB3,320,800,2.0);
+				locateArmature(_armatureB3,320,700,2.0);
 								
+				_armatureB4 = _factory.buildArmature("ButtonB");
+				locateArmature(_armatureB4,320,800,2.0);
+				
 				var btnA:ArmatureButton = new ArmatureButton(_armatureA,true,"カボチャ");
 				var btnB1:ArmatureButton = new ArmatureButton(_armatureB1,true,"yes");				
 				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,true,"no");
 				var btnB3:ArmatureButton = new ArmatureButton(_armatureB3,true,"toggle");
+				var btnB4:ArmatureButton = new ArmatureButton(_armatureB4,true,"longpress");
 				
 				//タッチがボタンからはみ出た時にdownStateのままでいるか？ デフォルト:false
 				btnA.keepDownStateOnRollOut = false;
 				btnB1.keepDownStateOnRollOut = true;
 				btnB2.keepDownStateOnRollOut = true;
 				btnB3.keepDownStateOnRollOut = true;
+				btnB4.keepDownStateOnRollOut = true;
 				
 				btnB3.isToggle = true;
+				btnB4.isLongPressEnabled = true;
 				
 				btnB2.gotoAndPlayBySlotName("labels","no");
 				btnB3.gotoAndPlayBySlotName("labels","toggle");
+				btnB4.gotoAndPlayBySlotName("labels","longpress");
 				
 				btnA.onTriggered = function():void
 				{
@@ -161,30 +169,40 @@ package harayoki
 						btnB1.disabled = false;
 						btnB2.disabled = false;
 						btnB3.disabled = false;
+						btnB4.disabled = false;
 					},4);
 					
 					btnB1.disabled = true;
 					btnB2.disabled = true;	
 					btnB3.disabled = true;	
+					btnB4.disabled = true;
 				}
 					
 				btnB1.onTriggered = function():void
 				{
-					trace(btnB1.userData+" clicked");					
+					trace(btnB1.userData+" triggered");					
 					btnA.disabled = false;
 				}
 				btnB2.onTriggered = function():void
 				{
-					trace(btnB2.userData+" clicked");					
+					trace(btnB2.userData+" triggered");					
 					btnA.disabled = true;					
 				}
 				btnB3.onTriggered = function():void
 				{
-					trace(btnB3.userData+" clicked");
+					trace(btnB3.userData+" triggered");
 				}
 				btnB3.onChange = function():void
 				{
 					trace(btnB3.userData+" changed");
+				}
+				btnB4.onTriggered = function():void
+				{
+					trace(btnB4.userData+" triggered");
+				}
+				btnB4.onLongPress = function():void
+				{
+					trace(btnB4.userData+" longpressed");
 				}
 			}
 
