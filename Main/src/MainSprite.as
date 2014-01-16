@@ -11,6 +11,8 @@ package
 	import dragonBones.factorys.StarlingFactory;
 	
 	import harayoki.dragonbones.ArmatureButton;
+	import harayoki.dragonbones.DQuery;
+	import harayoki.dragonbones.DragonBonesUtil;
 	
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
@@ -137,6 +139,13 @@ package
 								
 				var armatureB4:Armature = _factory.buildArmature("ButtonB");
 				locateArmature(armatureB4,320,800,2.0);
+				
+				
+				DragonBonesUtil.traceArmature(armatureA);
+				DragonBonesUtil.traceArmature(armatureB1);
+				
+				var $:DQuery = new DQuery(armatureA);
+				trace("kabocha",$.getBones("kabocha"));//うまく動いてない
 				
 				var btnA:ArmatureButton = new ArmatureButton(armatureA,true,"カボチャ");
 				var btnB1:ArmatureButton = new ArmatureButton(armatureB1,true,"yes");				
