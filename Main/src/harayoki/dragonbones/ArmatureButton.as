@@ -31,34 +31,7 @@ package harayoki.dragonbones
 		protected static const STATE_OVER:String = "_over";
 		protected static const STATE_DISABLED:String = "_disabled";
 		
-		protected static function queryDescendantArmatureByName(armature:Armature,pattern:RegExp,vec:Vector.<Armature>=null):Vector.<Armature>
-		{
-			
-			if(!vec) vec = new Vector.<Armature>();
-			
-			function q(a:Armature,v:Vector.<Armature>,tab:String=""):void
-			{
-				var slots:Vector.<Slot> = a.getSlots();
-				var child:Armature;
-				for each(var slot:Slot in slots)
-				{
-					if(slot.childArmature)
-					{
-						//trace(tab+slot.name);
-						child = slot.childArmature;
-						if(pattern.test(slot.name))
-						{
-							v.push(child);
-						}
-						q(child,v,tab+" ");
-					}
-				}
-			}
-			
-			q(armature,vec);
-			
-			return vec;
-		}
+
 	
 		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];		
 		protected var _armature:Armature;
@@ -318,27 +291,17 @@ package harayoki.dragonbones
 		
 		/**
 		 * patternにマッチするボタン内部の子孫Armatureをまとめてアニメさせる
-		 * @param pattern 名前の正規表現 String型またはRegExp型
+		 * @param slotNamePattern 名前パターン String型またはRegExp型
 		 * @param animationName 移動するアニメーション名
 		 * 主にテキストラベルを切り替えるような用途で使う事を想定
 		 * ※子孫のクエリが重いと思われるので、乱用はしない事
 		 */
-		public function queryArmaturesAndGotoAndPlay(pattern:*,animationName:String):void
+		public function gotoAndPlayBySlotName(slotNamePattern:*,animationName:String):void
 		{
 			if(!_armature) return;
-			
-			var re:RegExp = pattern as RegExp;
-			if(!re)
-			{
-				re = new RegExp(pattern+"");
-			}
-			
+
 			HELPER_ARMATURE_VECTOR.length = 0;
-			queryDescendantArmatureByName(_armature,re,HELPER_ARMATURE_VECTOR);
-			for each(var armature:Armature in HELPER_ARMATURE_VECTOR)
-			{
-				armature.animation && armature.animation.gotoAndPlay(animationName);
-			}			
+			DragonBonesUtil.gotoAndPlayBySlotName(_armature,slotNamePattern,animationName,HELPER_ARMATURE_VECTOR);
 		}
 		
 		//hit判定に使うdisplayObjectを返す

@@ -148,8 +148,8 @@ package harayoki
 				
 				btnB3.isToggle = true;
 				
-				btnB2.queryArmaturesAndGotoAndPlay("labels","no");
-				btnB3.queryArmaturesAndGotoAndPlay("labels","toggle");
+				btnB2.gotoAndPlayBySlotName("labels","no");
+				btnB3.gotoAndPlayBySlotName("labels","toggle");
 				
 				btnA.onTriggered = function():void
 				{
