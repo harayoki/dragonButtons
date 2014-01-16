@@ -204,6 +204,7 @@ package harayoki
 				btnB4.onLongPress = function():void
 				{
 					trace(btnB4.userData+" longpressed");
+					//DisplayObject(_armatureB4.display).removeFromParent(true);
 				}
 			}
 

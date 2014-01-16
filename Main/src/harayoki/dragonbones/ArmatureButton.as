@@ -7,6 +7,7 @@ package harayoki.dragonbones
 	
 	import dragonBones.Armature;
 	import dragonBones.Slot;
+	import dragonBones.animation.WorldClock;
 	
 	import starling.display.DisplayObject;
 	import starling.display.Image;
@@ -105,9 +106,15 @@ package harayoki.dragonbones
 		 * 廃棄処理 
 		 * armature
 		 */
-		public function destruct():void
+		public function dispose(disposeArmature:Boolean=false):void
 		{
 			trace("ArmatureButton#destruct");
+			if(disposeArmature && _armature)
+			{
+				WorldClock.clock.remove(_armature);
+				_armature.dispose();
+			}
+			
 			_cleanArmature();
 			_animationInfo = null;
 			_armature = null;
@@ -443,7 +450,7 @@ package harayoki.dragonbones
 		
 		protected function _handleRemoveFromStage(ev:Event):void
 		{
-			destruct();
+			dispose(true);
 		}
 		
 		protected function _handleLongPressEnterFrame(ev:Event):void
@@ -453,8 +460,8 @@ package harayoki.dragonbones
 			{
 				_removeLongPressEnterFrameHandler();
 				_hasLongPressed = true;
-				onLongPress && onLongPress();
 				currentState = STATE_LONGPRESS;
+				onLongPress && onLongPress();
 			}
 		}
 		
