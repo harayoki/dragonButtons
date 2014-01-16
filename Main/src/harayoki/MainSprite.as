@@ -133,12 +133,14 @@ package harayoki
 				
 				_armatureB2.getSlot("text").childArmature.getSlot("text").childArmature.animation.gotoAndPlay("no");
 								
-				var btnA:ArmatureButton = new ArmatureButton(_armatureA,"カボチャ");
-				var btnB1:ArmatureButton = new ArmatureButton(_armatureB1,"yes");				
-				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,"no");				
-				btnA.debugHitArea = false;
-				btnB1.debugHitArea = false;
-				btnB2.debugHitArea = false;
+				var btnA:ArmatureButton = new ArmatureButton(_armatureA,true,"カボチャ");
+				var btnB1:ArmatureButton = new ArmatureButton(_armatureB1,true,"yes");				
+				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,true,"no");				
+				
+				//タッチがボタンからはみ出た時にdownStateのままでいるか？ デフォルト:false
+				btnA.keepDownStateOnRollOut = false;
+				btnB1.keepDownStateOnRollOut = true;
+				btnB2.keepDownStateOnRollOut = true;
 				
 				btnA.onTriggered = function():void
 				{
@@ -146,7 +148,7 @@ package harayoki
 					btnA.freeze = true;
 					_starling.juggler.delayCall(function():void{
 						btnA.freeze = false;
-						btnA.reset();
+						btnA.resetButton();
 						btnB1.disabled = false;
 						btnB2.disabled = false;
 					},4);
@@ -163,7 +165,7 @@ package harayoki
 				btnB2.onTriggered = function():void
 				{
 					trace(btnB2.userData+" clicked");					
-					btnA.disabled = true;
+					//btnA.disabled = true;					
 				}
 					
 			}

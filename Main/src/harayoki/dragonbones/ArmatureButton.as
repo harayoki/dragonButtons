@@ -11,6 +11,7 @@ package harayoki.dragonbones
 	import starling.display.DisplayObject;
 	import starling.display.Image;
 	import starling.display.Sprite;
+	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
@@ -18,14 +19,18 @@ package harayoki.dragonbones
 	public class ArmatureButton
 	{
 		
+		//protected static const GRAY_FILTER:ColorMatrixFilter = new ColorMatrixFilter();
+		
+		protected static const HELPER_POINT:Point = new Point();
+		protected static const HIT_AREA_DISPLAYOBJECT_NAME:String = "hitArea";
+		
 		protected static const STATE_UP:String = "_up";
 		protected static const STATE_TRIGGER:String = "_trigger";
 		protected static const STATE_DOWN:String = "_down";
 		protected static const STATE_OVER:String = "_over";
 		protected static const STATE_DISABLED:String = "_disabled";
 		
-		protected static const HELPER_POINT:Point = new Point();
-		
+		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];		
 		protected var _armature:Armature;
 		protected var _freeze:Boolean = false;
 		protected var _disabled:Boolean = false;
@@ -36,10 +41,19 @@ package harayoki.dragonbones
 		protected var _invalidateId:uint = 0;		
 		protected var _hitAreaObject:DisplayObject;		
 		protected var _debugHitArea:Boolean;
+		protected var _touchPointID:int = -1;
+		protected var _autoDestruct:Boolean = false;
 		
-		//自由に使えるデータ
+		/**
+		 * ユーザが自由に使えるデータ
+		 */
 		public var userData:*;
 
+		/**
+		 * ボタンを押したままロールアウトしたらupStateに戻すか？
+		 */
+		public var keepDownStateOnRollOut:Boolean = false;
+		
 		/**
 		 * クリック時のハンドラ 
 		 */
@@ -47,29 +61,38 @@ package harayoki.dragonbones
 		
 		/**
 		 * トグル時のハンドラ 
+		 * (未実装)
 		 */
 		public var onChange:Function;
 		
 		/**
 		 * 長押し時のハンドラ
+		 * (未実装)
 		 */
 		public var onLongPress:Function;		
 		
-		public function ArmatureButton(armature:Armature=null,userData:*=null)
+		/**
+		 * @param armature ボタン化するアーマーチャー
+		 * @param autoDestruct armatureのdisplayObjectがStageから離れた際にこのボタンも廃棄するか
+		 * @param userData 任意のユーザが自由に使えるデータ
+		 */
+		public function ArmatureButton(armature:Armature=null,autoDestruct:Boolean=false,userData:*=null)
 		{			
 			_animationInfo = {};
 			if(armature)
 			{
-				applyArmature(armature);
+				applyArmature(armature,autoDestruct);
 			}
 			this.userData = userData;
 		}
 		
 		/**
 		 * 廃棄処理 
+		 * armature
 		 */
 		public function destruct():void
 		{
+			trace("ArmatureButton#destruct");
 			_cleanArmature();
 			_animationInfo = null;
 			_armature = null;
@@ -85,9 +108,10 @@ package harayoki.dragonbones
 			userData = null;
 		}
 		
-		
 		/**
-		 * ボタン処理が有効か？
+		 * ボタン処理を無効化する
+		 * disabledと異なり見た目に変化は無いので、
+		 * アニメーション再生の間ボタンを無効化したい時等に使う
 		 */
 		public function get freeze():Boolean
 		{
@@ -105,6 +129,10 @@ package harayoki.dragonbones
 			}
 		}
 		
+		/**
+		 * ボタン処理を無効化する
+		 * ボタンの見た目も変化する
+		 */
 		public function get disabled():Boolean
 		{
 			return _disabled;
@@ -119,9 +147,13 @@ package harayoki.dragonbones
 			_disabled = value;
 			_resetTouchable();
 			currentState = _disabled ? STATE_DISABLED : STATE_UP;
-			invalidate();
+			_draw();
 		}
 		
+		/**
+		 * デバッグ用にhitAreaを表示するか
+		 * (hitAreaが指定されていない場合は何も起こらない)
+		 */
 		public function get debugHitArea():Boolean
 		{
 			return _debugHitArea;
@@ -131,20 +163,16 @@ package harayoki.dragonbones
 		{
 			if(_debugHitArea == value) return;
 			_debugHitArea = value;
-			invalidate();
+			_draw();
 		}		
 
-		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];
-		
+		//取りうるボタンState
 		protected function get stateNames():Vector.<String>
 		{
 			return this._stateNames;
 		}		
 		
-		/**
-		 * @private
-		 */
-		
+		//現在のState
 		protected function get currentState():String
 		{
 			return _currentState;
@@ -162,15 +190,15 @@ package harayoki.dragonbones
 			}
 			if(_currentState == STATE_TRIGGER && value == STATE_OVER)
 			{
-				//認めない
+				//trrigerの演出がありうるのでこの遷移は認めない
 				return;
 			}
 			_currentState = value;
-			invalidate();
+			_draw();
 		}
 		
-		
-		protected function invalidate():void
+		//描画し直す (1フレームに１回だけの処理にまとめられる)
+		protected function _draw():void
 		{
 			if(!_armature) return;			
 			
@@ -190,7 +218,7 @@ package harayoki.dragonbones
 					else if(animationName != _lastAnimationName)
 					{
 						_lastAnimationName = animationName;
-						trace(_lastAnimationName);
+						//trace(_lastAnimationName);
 						_armature.animation.gotoAndPlay(_lastAnimationName);
 					}
 					
@@ -205,28 +233,40 @@ package harayoki.dragonbones
 		}
 		
 		/**
-		 * @param armature アーマーチャーを登録する
+		 * アーマーチャーを登録する
+		 * @param armature ボタン化するアーマーチャー
+		 * @param autoDestruct armatureのdisplayObjectがStageから離れた際にこのボタンも廃棄するか
 		 */
-		public function applyArmature(armature:Armature):void
+		public function applyArmature(armature:Armature,autoDestruct:Boolean):void
 		{
 			_cleanArmature();
 			_armature = armature;
+			_autoDestruct = autoDestruct;
 			_initArmature();
 		}
 		
-		public function reset():void
+		/**
+		 * ボタンの状態をデフォルトに戻す 
+		 * 外部で直接アニメーション処理を制御した際等に使う
+		 */
+		public function resetButton():void
 		{
 			currentState = STATE_UP;
+			_touchPointID = -1;
 		}
 		
+		//hit判定に使うdisplayObjectを返す
 		protected function get hitAreaObject():DisplayObject
 		{
-			if(_hitAreaObject) return _hitAreaObject;			
+			//計算済みの物があればそれを使う
+			if(_hitAreaObject) return _hitAreaObject;
+				
 			if(!_armature) return null;
 			
 			_hitAreaObject = _armature.display as Sprite;			
 			
-			var slot:Slot = _armature.getSlot("hitArea");
+			//特別な名前のdisplayObjectがあれば、それをヒット領域に使う
+			var slot:Slot = _armature.getSlot(HIT_AREA_DISPLAYOBJECT_NAME);
 			if(!slot)
 			{
 				return _hitAreaObject;
@@ -244,11 +284,15 @@ package harayoki.dragonbones
 					var theSlot:Slot = slots[i];
 					(theSlot.display as DisplayObject).touchable = false;
 				}
+				
+				//デバッグ処理用に最前面に持ってきておく
 				slot.zOrder = len -1 ;
+				
 				(slot.display as DisplayObject).touchable = true;
-				_hitAreaObject.alpha = 0.0;//validateに処理を任せると一瞬見えるのでここでも消す
+				_hitAreaObject.alpha = 0.0;//validateに透明度制御を任せるだけだと一瞬見えてしまうので、ここでいったん消す
 				if(_hitAreaObject as Image) 
 				{
+					//デバッグ処理用に赤くしておく
 					(_hitAreaObject as Image).color = 0xff00ff;
 				}
 			}
@@ -257,15 +301,24 @@ package harayoki.dragonbones
 		
 		protected function _initArmature():void
 		{
-			if(!hitAreaObject) return;
-			hitAreaObject.addEventListener(TouchEvent.TOUCH,_handleTouch);
+			var dobj:DisplayObject = hitAreaObject;//ここでhitAreaObjectが作られる
+			if(!dobj) return;
+			
+			dobj.addEventListener(TouchEvent.TOUCH,_handleTouch);
 			_resetTouchable();
+			
+			if(_autoDestruct)
+			{
+				dobj.addEventListener(Event.REMOVED_FROM_STAGE,_handleRemoveFromStage);
+			}
+			
+			//アニメーションラベルを解析して、足りない物は良い感じに割り当てる
 			var animations:Vector.<String> = _armature.animation.animationList;
 			for(var i:int=0;i<animations.length;i++)
 			{
 				var animation:String = animations[i];
 				_animationInfo[animation] = animation;
-				trace("--",animation);
+				//trace("--",animation);
 			}
 						
 			//upが見当たらない場合は最初のラベルを使う
@@ -291,42 +344,81 @@ package harayoki.dragonbones
 			currentState = STATE_UP;
 		}
 		
+		protected function _handleRemoveFromStage(ev:Event):void
+		{
+			destruct();
+		}
+		
 		protected function _resetTouchable():void
 		{
+			_touchPointID = -1;
 			hitAreaObject.touchable = (!_freeze && !_disabled);
 		}
 		
 		protected function _cleanArmature():void
 		{
 			_animationInfo = {};
-			var sp:DisplayObject = hitAreaObject;
-			if(!sp) return;
-			sp.removeEventListener(TouchEvent.TOUCH,_handleTouch);
+			if(_armature)
+			{
+				if(_autoDestruct) DisplayObject(_armature.display).removeEventListener(Event.REMOVED_FROM_STAGE,_handleRemoveFromStage);				
+				hitAreaObject.removeEventListener(TouchEvent.TOUCH,_handleTouch);
+			}			
 		}
 		
 		protected function _handleTouch(ev:TouchEvent):void
 		{
-			var touch:Touch = ev.getTouch(hitAreaObject);
+			var touch:Touch;
+			if(_touchPointID<0)
+			{
+				touch = ev.getTouch(hitAreaObject, TouchPhase.BEGAN);
+				if(touch)
+				{
+					this.currentState = STATE_DOWN;
+					_touchPointID = touch.id;
+//					if(this._isLongPressEnabled)
+//					{
+//						this._touchBeginTime = getTimer();
+//						this._hasLongPressed = false;
+//						this.addEventListener(Event.ENTER_FRAME, longPress_enterFrameHandler);
+//					}
+					return;
+				}
+				touch = ev.getTouch(hitAreaObject, TouchPhase.HOVER);
+				if(touch)
+				{
+					this.currentState = STATE_OVER;
+					return;
+				}
+				
+				currentState = STATE_UP;
+				
+				return;
+				
+			}
+			
+			touch = ev.getTouch(hitAreaObject, null, _touchPointID);
 			if(!touch)
 			{
-				currentState = STATE_UP;
+				//起こりえる
 				return;
 			}
 			//trace(touch.phase);
-			if(touch.phase == TouchPhase.BEGAN)
+			const isHit:Boolean = _hitTest(touch);
+			if(touch.phase == TouchPhase.MOVED)
 			{
-				currentState = STATE_DOWN;
-			}
-			else if(touch.phase == TouchPhase.HOVER)
-			{
-				currentState = STATE_OVER;
-			}
-			else if(touch.phase == TouchPhase.MOVED)
-			{
+				if(isHit || keepDownStateOnRollOut)
+				{
+					this.currentState = STATE_DOWN;
+				}
+				else
+				{
+					this.currentState = STATE_UP;
+				}
 			}
 			else if(touch.phase == TouchPhase.ENDED)
 			{
-				if(_hitTest(touch))
+				_touchPointID = -1;
+				if(isHit)
 				{
 					currentState = STATE_TRIGGER;
 					onTriggered && onTriggered();
