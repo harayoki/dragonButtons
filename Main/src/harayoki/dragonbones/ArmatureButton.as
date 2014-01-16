@@ -20,36 +20,36 @@ package harayoki.dragonbones
 	public class ArmatureButton
 	{
 		
-		//protected static const GRAY_FILTER:ColorMatrixFilter = new ColorMatrixFilter();
+		//private static const GRAY_FILTER:ColorMatrixFilter = new ColorMatrixFilter();
 		
-		protected static const HELPER_POINT:Point = new Point();
-		protected static const HELPER_ARMATURE_VECTOR:Vector.<Armature> = new Vector.<Armature>();
-		protected static const HIT_AREA_DISPLAYOBJECT_NAME:String = "hitArea";
+		private static const HELPER_POINT:Point = new Point();
+		private static const HELPER_ARMATURE_VECTOR:Vector.<Armature> = new Vector.<Armature>();
+		private static const HIT_AREA_DISPLAYOBJECT_NAME:String = "hitArea";
 		
-		protected static const STATE_UP:String = "_up";
-		protected static const STATE_OVER:String = "_over";
-		protected static const STATE_DOWN:String = "_down";
-		protected static const STATE_DISABLED:String = "_disabled";
-		protected static const STATE_TRIGGER:String = "_trigger";
-		protected static const STATE_LONGPRESS:String = "_longpress";
+		private static const STATE_UP:String = "_up";
+		private static const STATE_OVER:String = "_over";
+		private static const STATE_DOWN:String = "_down";
+		private static const STATE_DISABLED:String = "_disabled";
+		private static const STATE_TRIGGER:String = "_trigger";
+		private static const STATE_LONGPRESS:String = "_longpress";
 	
-		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED, STATE_LONGPRESS ];		
-		protected var _armature:Armature;
-		protected var _animationInfo:Object;
-		protected var _hitAreaObject:DisplayObject;		
-		protected var _freeze:Boolean = false;
-		protected var _disabled:Boolean = false;
-		protected var _lastAnimationName:String = null;
-		protected var _triggered:Boolean = false;
-		protected var _currentState:String = null;
-		protected var _invalidateId:uint = 0;		
-		protected var _debugHitArea:Boolean;
-		protected var _touchPointID:int = -1;
-		protected var _autoDestruct:Boolean = false;
-		protected var _isSelected:Boolean = false;		
-		protected var _isLongPressEnabled:Boolean = false;
-		protected var _touchBeginTime:int;
-		protected var _hasLongPressed:Boolean;
+		private var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED, STATE_LONGPRESS ];		
+		private var _armature:Armature;
+		private var _animationInfo:Object;
+		private var _hitAreaObject:DisplayObject;		
+		private var _freeze:Boolean = false;
+		private var _disabled:Boolean = false;
+		private var _lastAnimationName:String = null;
+		private var _triggered:Boolean = false;
+		private var _currentState:String = null;
+		private var _invalidateId:uint = 0;		
+		private var _debugHitArea:Boolean;
+		private var _touchPointID:int = -1;
+		private var _autoDestruct:Boolean = false;
+		private var _isSelected:Boolean = false;		
+		private var _isLongPressEnabled:Boolean = false;
+		private var _touchBeginTime:int;
+		private var _hasLongPressed:Boolean;
 				
 		/**
 		 * ユーザが自由に使えるデータ
@@ -133,7 +133,7 @@ package harayoki.dragonbones
 		
 		
 		//取りうるボタンState
-		protected function get stateNames():Vector.<String>
+		private function get stateNames():Vector.<String>
 		{
 			return this._stateNames;
 		}		
@@ -245,7 +245,7 @@ package harayoki.dragonbones
 			}
 		}		
 		
-		protected function _removeLongPressEnterFrameHandler():void
+		private function _removeLongPressEnterFrameHandler():void
 		{
 			if(hitAreaObject)
 			{
@@ -254,12 +254,12 @@ package harayoki.dragonbones
 		}
 		
 		//現在のState
-		protected function get currentState():String
+		private function get currentState():String
 		{
 			return _currentState;
 		}
 		
-		protected function set currentState(value:String):void
+		private function set currentState(value:String):void
 		{
 			if(_currentState == value)
 			{
@@ -279,7 +279,7 @@ package harayoki.dragonbones
 		}
 		
 		//描画し直す (1フレームに１回だけの処理にまとめられる)
-		protected function _draw():void
+		private function _draw():void
 		{
 			if(!_armature) return;			
 			
@@ -345,7 +345,7 @@ package harayoki.dragonbones
 			currentState = STATE_UP;
 		}
 		
-		protected function _resetTouchState():void
+		private function _resetTouchState():void
 		{
 			_touchPointID = -1;
 			_removeLongPressEnterFrameHandler();
@@ -367,7 +367,7 @@ package harayoki.dragonbones
 		}
 		
 		//hit判定に使うdisplayObjectを返す
-		protected function get hitAreaObject():DisplayObject
+		private function get hitAreaObject():DisplayObject
 		{
 			//計算済みの物があればそれを使う
 			if(_hitAreaObject) return _hitAreaObject;
@@ -410,7 +410,7 @@ package harayoki.dragonbones
 			return _hitAreaObject;
 		}
 		
-		protected function _initArmature():void
+		private function _initArmature():void
 		{
 			var dobj:DisplayObject = hitAreaObject;//ここでhitAreaObjectが作られる
 			if(!dobj) return;
@@ -462,12 +462,12 @@ package harayoki.dragonbones
 			
 		}
 		
-		protected function _handleRemoveFromStage(ev:Event):void
+		private function _handleRemoveFromStage(ev:Event):void
 		{
 			dispose(true);
 		}
 		
-		protected function _handleLongPressEnterFrame(ev:Event):void
+		private function _handleLongPressEnterFrame(ev:Event):void
 		{
 			var accumulatedTime:Number = (flash.utils.getTimer() - _touchBeginTime) / 1000;
 			if(accumulatedTime >= longPressDuration)
@@ -479,13 +479,13 @@ package harayoki.dragonbones
 			}
 		}
 		
-		protected function _resetTouchable():void
+		private function _resetTouchable():void
 		{
 			_touchPointID = -1;
 			hitAreaObject.touchable = (!_freeze && !_disabled);
 		}
 		
-		protected function _cleanArmature():void
+		private function _cleanArmature():void
 		{
 			_animationInfo = {};
 			if(_armature)
@@ -496,7 +496,7 @@ package harayoki.dragonbones
 			}			
 		}
 
-		protected function _handleTouch(ev:TouchEvent):void
+		private function _handleTouch(ev:TouchEvent):void
 		{
 			var touch:Touch;
 			if(_touchPointID<0)
@@ -572,7 +572,7 @@ package harayoki.dragonbones
 			}
 		}
 		
-		protected function _hitTest(touch:Touch):Boolean
+		private function _hitTest(touch:Touch):Boolean
 		{
 			//stageが実際にクリックされる時まで存在するかわからないのと
 			//対象DisplayObjectの大きさがどうもただしくとれないのでここで毎回rectを取得する スピード的には遅いかもしれないが hitAreaObjectの移動にも耐えられる。。
