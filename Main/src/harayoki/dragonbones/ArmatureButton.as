@@ -18,8 +18,8 @@ package harayoki.dragonbones
 	public class ArmatureButton
 	{
 		
-		protected static const STATE_NORMAL:String = "_normal";
 		protected static const STATE_UP:String = "_up";
+		protected static const STATE_TRIGGER:String = "_trigger";
 		protected static const STATE_DOWN:String = "_down";
 		protected static const STATE_OVER:String = "_over";
 		protected static const STATE_DISABLED:String = "_disabled";
@@ -118,7 +118,7 @@ package harayoki.dragonbones
 			}
 			_disabled = value;
 			_resetTouchable();
-			currentState = _disabled ? STATE_DISABLED : STATE_NORMAL;
+			currentState = _disabled ? STATE_DISABLED : STATE_UP;
 			invalidate();
 		}
 		
@@ -134,7 +134,7 @@ package harayoki.dragonbones
 			invalidate();
 		}		
 
-		protected var _stateNames:Vector.<String> = new <String> [ STATE_NORMAL, STATE_UP, STATE_DOWN, STATE_OVER, STATE_DISABLED ];
+		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];
 		
 		protected function get stateNames():Vector.<String>
 		{
@@ -160,7 +160,7 @@ package harayoki.dragonbones
 			{
 				throw new ArgumentError("Invalid state: " + value + ".");
 			}
-			if(_currentState == STATE_UP && value == STATE_OVER)
+			if(_currentState == STATE_TRIGGER && value == STATE_OVER)
 			{
 				//認めない
 				return;
@@ -190,7 +190,7 @@ package harayoki.dragonbones
 					else if(animationName != _lastAnimationName)
 					{
 						_lastAnimationName = animationName;
-						//trace(_lastAnimationName);
+						trace(_lastAnimationName);
 						_armature.animation.gotoAndPlay(_lastAnimationName);
 					}
 					
@@ -216,7 +216,7 @@ package harayoki.dragonbones
 		
 		public function reset():void
 		{
-			currentState = STATE_NORMAL;
+			currentState = STATE_UP;
 		}
 		
 		protected function get hitAreaObject():DisplayObject
@@ -265,32 +265,30 @@ package harayoki.dragonbones
 			{
 				var animation:String = animations[i];
 				_animationInfo[animation] = animation;
-				//trace(animation);
+				trace("--",animation);
 			}
-			
-			//STATE_NORMALが基本ですが、FlasherにとってMovieClipButtonは"_up"ラベルが基本になるので、STATE_NORMALが無い場合はUPを使います
-			
+						
 			//upが見当たらない場合は最初のラベルを使う
 			if(!_animationInfo[STATE_UP])
 			{
 				_animationInfo[STATE_UP] = animations[0];
 			}
-			//normalが見当たらない場合はupを使う
-			if(!_animationInfo[STATE_NORMAL])
+			//triggerが見当たらない場合はupを使う
+			if(!_animationInfo[STATE_TRIGGER])
 			{
-				_animationInfo[STATE_NORMAL] = _animationInfo[STATE_UP]
+				_animationInfo[STATE_TRIGGER] = _animationInfo[STATE_UP]
 			}
 			//overが見当たらない場合はnormalを使う
 			if(!_animationInfo[STATE_OVER])
 			{
-				_animationInfo[STATE_OVER] = _animationInfo[STATE_NORMAL]
+				_animationInfo[STATE_OVER] = _animationInfo[STATE_UP]
 			}
 			//downが見当たらない場合はnormalを使う
 			if(!_animationInfo[STATE_DOWN])
 			{
-				_animationInfo[STATE_DOWN] = _animationInfo[STATE_NORMAL]
+				_animationInfo[STATE_DOWN] = _animationInfo[STATE_UP]
 			}
-			currentState = STATE_NORMAL;
+			currentState = STATE_UP;
 		}
 		
 		protected function _resetTouchable():void
@@ -311,7 +309,7 @@ package harayoki.dragonbones
 			var touch:Touch = ev.getTouch(hitAreaObject);
 			if(!touch)
 			{
-				currentState = STATE_NORMAL;
+				currentState = STATE_UP;
 				return;
 			}
 			//trace(touch.phase);
@@ -330,12 +328,12 @@ package harayoki.dragonbones
 			{
 				if(_hitTest(touch))
 				{
-					currentState = STATE_UP;
+					currentState = STATE_TRIGGER;
 					onTriggered && onTriggered();
 				}
 				else
 				{
-					currentState = STATE_NORMAL;
+					currentState = STATE_UP;
 				}
 			}
 		}
