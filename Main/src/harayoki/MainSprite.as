@@ -36,6 +36,7 @@ package harayoki
 		private var _armatureA:Armature;
 		private var _armatureB1:Armature;
 		private var _armatureB2:Armature;
+		private var _armatureB3:Armature;
 
 		/**
 		 * ここから動作スタート
@@ -131,16 +132,24 @@ package harayoki
 				_armatureB2 = _factory.buildArmature("ButtonB");
 				locateArmature(_armatureB2,320,700,2.0);
 				
-				_armatureB2.getSlot("text").childArmature.getSlot("text").childArmature.animation.gotoAndPlay("no");
+				_armatureB3 = _factory.buildArmature("ButtonB");
+				locateArmature(_armatureB3,320,800,2.0);
 								
 				var btnA:ArmatureButton = new ArmatureButton(_armatureA,true,"カボチャ");
 				var btnB1:ArmatureButton = new ArmatureButton(_armatureB1,true,"yes");				
-				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,true,"no");				
+				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,true,"no");
+				var btnB3:ArmatureButton = new ArmatureButton(_armatureB3,true,"toggle");
 				
 				//タッチがボタンからはみ出た時にdownStateのままでいるか？ デフォルト:false
 				btnA.keepDownStateOnRollOut = false;
 				btnB1.keepDownStateOnRollOut = true;
 				btnB2.keepDownStateOnRollOut = true;
+				btnB3.keepDownStateOnRollOut = true;
+				
+				btnB3.isToggle = true;
+				
+				btnB2.queryArmaturesAndGotoAndPlay("labels","no");
+				btnB3.queryArmaturesAndGotoAndPlay("labels","toggle");
 				
 				btnA.onTriggered = function():void
 				{
@@ -151,10 +160,12 @@ package harayoki
 						btnA.resetButton();
 						btnB1.disabled = false;
 						btnB2.disabled = false;
+						btnB3.disabled = false;
 					},4);
 					
 					btnB1.disabled = true;
 					btnB2.disabled = true;	
+					btnB3.disabled = true;	
 				}
 					
 				btnB1.onTriggered = function():void
@@ -165,9 +176,16 @@ package harayoki
 				btnB2.onTriggered = function():void
 				{
 					trace(btnB2.userData+" clicked");					
-					//btnA.disabled = true;					
+					btnA.disabled = true;					
 				}
-					
+				btnB3.onTriggered = function():void
+				{
+					trace(btnB3.userData+" clicked");
+				}
+				btnB3.onChange = function():void
+				{
+					trace(btnB3.userData+" changed");
+				}
 			}
 
 			

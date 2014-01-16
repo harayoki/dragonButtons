@@ -22,6 +22,7 @@ package harayoki.dragonbones
 		//protected static const GRAY_FILTER:ColorMatrixFilter = new ColorMatrixFilter();
 		
 		protected static const HELPER_POINT:Point = new Point();
+		protected static const HELPER_ARMATURE_VECTOR:Vector.<Armature> = new Vector.<Armature>();
 		protected static const HIT_AREA_DISPLAYOBJECT_NAME:String = "hitArea";
 		
 		protected static const STATE_UP:String = "_up";
@@ -30,6 +31,35 @@ package harayoki.dragonbones
 		protected static const STATE_OVER:String = "_over";
 		protected static const STATE_DISABLED:String = "_disabled";
 		
+		protected static function queryDescendantArmatureByName(armature:Armature,pattern:RegExp,vec:Vector.<Armature>=null):Vector.<Armature>
+		{
+			
+			if(!vec) vec = new Vector.<Armature>();
+			
+			function q(a:Armature,v:Vector.<Armature>,tab:String=""):void
+			{
+				var slots:Vector.<Slot> = a.getSlots();
+				var child:Armature;
+				for each(var slot:Slot in slots)
+				{
+					if(slot.childArmature)
+					{
+						//trace(tab+slot.name);
+						child = slot.childArmature;
+						if(pattern.test(slot.name))
+						{
+							v.push(child);
+						}
+						q(child,v,tab+" ");
+					}
+				}
+			}
+			
+			q(armature,vec);
+			
+			return vec;
+		}
+	
 		protected var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED ];		
 		protected var _armature:Armature;
 		protected var _animationInfo:Object;
@@ -43,6 +73,7 @@ package harayoki.dragonbones
 		protected var _debugHitArea:Boolean;
 		protected var _touchPointID:int = -1;
 		protected var _autoDestruct:Boolean = false;
+		protected var _isSelected:Boolean = false;
 		
 		/**
 		 * ユーザが自由に使えるデータ
@@ -61,7 +92,6 @@ package harayoki.dragonbones
 		
 		/**
 		 * トグル時のハンドラ 
-		 * (未実装)
 		 */
 		public var onChange:Function;
 		
@@ -71,6 +101,11 @@ package harayoki.dragonbones
 		 */
 		public var onLongPress:Function;		
 		
+		/**
+		 * トグルモードで動かすか 
+		 */
+		public var isToggle:Boolean = false;
+				
 		/**
 		 * @param armature ボタン化するアーマーチャー
 		 * @param autoDestruct armatureのdisplayObjectがStageから離れた際にこのボタンも廃棄するか
@@ -109,6 +144,13 @@ package harayoki.dragonbones
 			userData = null;
 		}
 		
+		
+		//取りうるボタンState
+		protected function get stateNames():Vector.<String>
+		{
+			return this._stateNames;
+		}		
+
 		/**
 		 * ボタン処理を無効化する
 		 * disabledと異なり見た目に変化は無いので、
@@ -166,12 +208,21 @@ package harayoki.dragonbones
 			_debugHitArea = value;
 			_draw();
 		}		
-
-		//取りうるボタンState
-		protected function get stateNames():Vector.<String>
+		
+		/**
+		 * 現在選択中か(トグルモードでのみ有効)
+		 */
+		public function get isSelected():Boolean
 		{
-			return this._stateNames;
-		}		
+			return _isSelected;
+		}
+		
+		public function set isSelected(value:Boolean):void
+		{
+			if(_isSelected == value) return;
+			_isSelected = value;
+			onChange && onChange();
+		}
 		
 		//現在のState
 		protected function get currentState():String
@@ -207,7 +258,14 @@ package harayoki.dragonbones
 			{
 				_invalidateId = flash.utils.setTimeout(function():void{
 					_invalidateId = 0;
-					var animationName:String = _animationInfo[_currentState];
+					var animationName:String;
+					animationName = _animationInfo[_currentState];
+					
+					if(isSelected && (animationName == _animationInfo[STATE_TRIGGER] || animationName == _animationInfo[STATE_UP]))
+					{
+						animationName =  _animationInfo[STATE_DOWN];
+					}
+					
 					DisplayObject(_armature.display).alpha = 1.0;
 					if(_currentState == STATE_DISABLED && !animationName)
 					{
@@ -244,6 +302,7 @@ package harayoki.dragonbones
 			_armature = armature;
 			_autoDestruct = autoDestruct;
 			_initArmature();
+			
 		}
 		
 		/**
@@ -252,8 +311,34 @@ package harayoki.dragonbones
 		 */
 		public function resetButton():void
 		{
-			currentState = STATE_UP;
 			_touchPointID = -1;
+			isSelected = false;
+			currentState = STATE_UP;
+		}
+		
+		/**
+		 * patternにマッチするボタン内部の子孫Armatureをまとめてアニメさせる
+		 * @param pattern 名前の正規表現 String型またはRegExp型
+		 * @param animationName 移動するアニメーション名
+		 * 主にテキストラベルを切り替えるような用途で使う事を想定
+		 * ※子孫のクエリが重いと思われるので、乱用はしない事
+		 */
+		public function queryArmaturesAndGotoAndPlay(pattern:*,animationName:String):void
+		{
+			if(!_armature) return;
+			
+			var re:RegExp = pattern as RegExp;
+			if(!re)
+			{
+				re = new RegExp(pattern+"");
+			}
+			
+			HELPER_ARMATURE_VECTOR.length = 0;
+			queryDescendantArmatureByName(_armature,re,HELPER_ARMATURE_VECTOR);
+			for each(var armature:Armature in HELPER_ARMATURE_VECTOR)
+			{
+				armature.animation && armature.animation.gotoAndPlay(animationName);
+			}			
 		}
 		
 		//hit判定に使うdisplayObjectを返す
@@ -342,7 +427,9 @@ package harayoki.dragonbones
 			{
 				_animationInfo[STATE_DOWN] = _animationInfo[STATE_UP]
 			}
-			currentState = STATE_UP;
+			
+			resetButton();
+			
 		}
 		
 		protected function _handleRemoveFromStage(ev:Event):void
@@ -421,6 +508,10 @@ package harayoki.dragonbones
 				_touchPointID = -1;
 				if(isHit)
 				{
+					if(isToggle)
+					{
+						isSelected = !isSelected;
+					}
 					currentState = STATE_TRIGGER;
 					onTriggered && onTriggered();
 				}
