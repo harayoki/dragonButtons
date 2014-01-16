@@ -137,7 +137,21 @@ package harayoki.dragonbones
 		{
 			return this._stateNames;
 		}		
+		
+		/**
+		 * 保持している Armatureを返す
+		 */		
+		public function get armature():Armature{
+			return _armature;
+		}
 
+		/**
+		 * 保持しているArmatureの中のDisplayObjectを返す
+		 */		
+		public function get baseDisplayObject():DisplayObject{
+			return _armature ? _armature.display as DisplayObject : null;
+		}
+		
 		/**
 		 * ボタン処理を無効化する
 		 * disabledと異なり見た目に変化は無いので、

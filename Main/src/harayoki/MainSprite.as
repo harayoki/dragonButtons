@@ -33,11 +33,6 @@ package harayoki
 		
 		private var _assetManager:AssetManager;
 		private var _factory:StarlingFactory;
-		private var _armatureA:Armature;
-		private var _armatureB1:Armature;
-		private var _armatureB2:Armature;
-		private var _armatureB3:Armature;
-		private var _armatureB4:Armature;
 
 		/**
 		 * ここから動作スタート
@@ -124,46 +119,49 @@ package harayoki
 					self.addChild(dobj);
 				}
 				
-				_armatureA = _factory.buildArmature("ButtonA");
-				locateArmature(_armatureA,320,250,1.5);
+				var armatureA:Armature = _factory.buildArmature("ButtonA");
+				locateArmature(armatureA,320,250,1.5);
 				
-				_armatureB1 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB1,320,500,2.0);
+				var armatureB1:Armature = _factory.buildArmature("ButtonB");
+				locateArmature(armatureB1,320,500,2.0);
 				
-				_armatureB2 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB2,320,600,2.0);
+				var armatureB2:Armature = _factory.buildArmature("ButtonB");
+				locateArmature(armatureB2,320,600,2.0);
 				
-				_armatureB3 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB3,320,700,2.0);
+				var armatureB3:Armature = _factory.buildArmature("ButtonB");
+				locateArmature(armatureB3,320,700,2.0);
 								
-				_armatureB4 = _factory.buildArmature("ButtonB");
-				locateArmature(_armatureB4,320,800,2.0);
+				var armatureB4:Armature = _factory.buildArmature("ButtonB");
+				locateArmature(armatureB4,320,800,2.0);
 				
-				var btnA:ArmatureButton = new ArmatureButton(_armatureA,true,"カボチャ");
-				var btnB1:ArmatureButton = new ArmatureButton(_armatureB1,true,"yes");				
-				var btnB2:ArmatureButton = new ArmatureButton(_armatureB2,true,"no");
-				var btnB3:ArmatureButton = new ArmatureButton(_armatureB3,true,"toggle");
-				var btnB4:ArmatureButton = new ArmatureButton(_armatureB4,true,"longpress");
+				var btnA:ArmatureButton = new ArmatureButton(armatureA,true,"カボチャ");
+				var btnB1:ArmatureButton = new ArmatureButton(armatureB1,true,"yes");				
+				var btnB2:ArmatureButton = new ArmatureButton(armatureB2,true,"no");
+				var btnB3:ArmatureButton = new ArmatureButton(armatureB3,true,"toggle");
+				var btnB4:ArmatureButton = new ArmatureButton(armatureB4,true,"longpress");
 				
 				//タッチがボタンからはみ出た時にdownStateのままでいるか？ デフォルト:false
 				btnA.keepDownStateOnRollOut = false;
 				btnB1.keepDownStateOnRollOut = true;
 				btnB2.keepDownStateOnRollOut = true;
-				btnB3.keepDownStateOnRollOut = true;
-				btnB4.keepDownStateOnRollOut = true;
 				
+				//トグルモードにする
 				btnB3.isToggle = true;
+				btnB3.keepDownStateOnRollOut = true;
+				
+				//ロングプレスモードにする
 				btnB4.isLongPressEnabled = true;
 				btnB4.keepDownStateOnRollOut = false;
 				
+				//内部のフレームを切り替える＝(この場合は)ラベルを変更する
 				btnB2.gotoAndPlayBySlotName("labels","no");
 				btnB3.gotoAndPlayBySlotName("labels","toggle");
 				btnB4.gotoAndPlayBySlotName("labels","longpress");
 				
 				btnA.onTriggered = function():void
 				{
-					trace(btnA.userData+" clicked");					
-					btnA.freeze = true;
+					trace(btnA.userData+" triggered");			
+					
 					_starling.juggler.delayCall(function():void{
 						btnA.freeze = false;
 						btnA.resetButton();
@@ -173,6 +171,9 @@ package harayoki
 						btnB4.disabled = false;
 					},4);
 					
+					//自身のボタンの反応をなくす(アニメを再生させたいため)
+					btnA.freeze = true;					
+					//他のボタンは使えない状態の見た目にする
 					btnB1.disabled = true;
 					btnB2.disabled = true;	
 					btnB3.disabled = true;	
@@ -204,7 +205,6 @@ package harayoki
 				btnB4.onLongPress = function():void
 				{
 					trace(btnB4.userData+" longpressed");
-					//DisplayObject(_armatureB4.display).removeFromParent(true);
 				}
 			}
 
