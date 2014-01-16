@@ -7,6 +7,7 @@ package
 	
 	import dragonBones.Armature;
 	import dragonBones.animation.WorldClock;
+	import dragonBones.core.DragonBones;
 	import dragonBones.factorys.StarlingFactory;
 	
 	import harayoki.dragonbones.ArmatureButton;
@@ -39,6 +40,9 @@ package
 		 */
 		public static function main(stage:Stage):void
 		{
+			
+			trace("DragonBones version : ",DragonBones.VERSION,"("+DragonBones.VERSION_NUMBER+")");
+			trace("DragonBones data version : ",DragonBones.DATA_VERSION)
 			_flashStage = stage;
 			
 			_flashStage.align = StageAlign.TOP_LEFT;
