@@ -159,7 +159,7 @@ package
 				btnB2.keepDownStateOnRollOut = true;
 				
 				//トグルモードにする
-				btnB3.isToggle = true;
+				btnB3.isToggleMode = true;
 				btnB3.keepDownStateOnRollOut = true;
 				
 				//ロングプレスモードにする

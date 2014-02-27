@@ -6,6 +6,7 @@ package harayoki.dragonbones
 	import flash.utils.setTimeout;
 	
 	import dragonBones.Armature;
+	import dragonBones.Bone;
 	import dragonBones.Slot;
 	import dragonBones.animation.WorldClock;
 	
@@ -19,13 +20,19 @@ package harayoki.dragonbones
 
 	public class ArmatureButton
 	{
-		
-		//private static const GRAY_FILTER:ColorMatrixFilter = new ColorMatrixFilter();
+        
+        /**
+         * ボタン全てのイベントを送信するDispacher
+         * 主にSEの再生を行う為に実装
+         * 通常はonTriggeredなどハンドラを用いれば良い
+         */
+        public static const globalEventDispacher:ArmatureButtonEventDispacher = new ArmatureButtonEventDispacher();
 		
 		private static const HELPER_POINT:Point = new Point();
 		private static const HELPER_ARMATURE_VECTOR:Vector.<Armature> = new Vector.<Armature>();
 		private static const HIT_AREA_DISPLAYOBJECT_NAME:String = "hitArea";
-		
+		private static const REG_ALL:RegExp = /.*/;
+        
 		private static const STATE_UP:String = "_up";
 		private static const STATE_OVER:String = "_over";
 		private static const STATE_DOWN:String = "_down";
@@ -33,6 +40,9 @@ package harayoki.dragonbones
 		private static const STATE_TRIGGER:String = "_trigger";
 		private static const STATE_LONGPRESS:String = "_longpress";
 	
+		private static const SELECTED_ANIMATION:String = "select";
+		private static const NON_SELECTED_ANIMATION:String = "noselect";
+		
 		private var _stateNames:Vector.<String> = new <String> [ STATE_UP, STATE_TRIGGER, STATE_DOWN, STATE_OVER, STATE_DISABLED, STATE_LONGPRESS ];		
 		private var _armature:Armature;
 		private var _animationInfo:Object;
@@ -46,20 +56,80 @@ package harayoki.dragonbones
 		private var _debugHitArea:Boolean;
 		private var _touchPointID:int = -1;
 		private var _autoDestruct:Boolean = false;
-		private var _isSelected:Boolean = false;		
+		private var _isToggleSelected:Boolean = false;		
 		private var _isLongPressEnabled:Boolean = false;
 		private var _touchBeginTime:int;
 		private var _hasLongPressed:Boolean;
-				
+		private var _isShow:Boolean = true;
+        private var _parentBone:Bone;
+        private var _orgScaleX:Number = 1.0;
+        
+        public var name:String;
+        
 		/**
 		 * ユーザが自由に使えるデータ
 		 */
-		public var userData:*;
+        public var userData:* = null;
 
+        /**
+         * ユーザがサウンド用途で自由に使えるデータ
+         */
+        public var soundData:* = null;
+        
 		/**
 		 * ボタンを押したままロールアウトしたらupStateに戻すか？
 		 */
 		public var keepDownStateOnRollOut:Boolean = false;
+		
+		/**
+		 * 選択状態か
+		 */
+		public function get isSelected():Boolean
+		{
+			return _isSelected;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set isSelected(value:Boolean):void
+		{
+			if(value == _isSelected)
+			{
+				return;
+			}
+			_updateSelectedAnimation = true;
+			_isSelected = value;
+			_draw();
+		}
+        
+        /**
+         * アーマーチャー名を得る
+         */
+        public function getArmatureName():String
+        {
+            return _armature ? _armature.name : null;
+        }
+        
+        /**
+         * ボタン操作時にグローバルイベントを投げるか
+         */
+        public var dispatchGlobalEvent:Boolean = true;
+
+		/**
+		 * タッチダウン時のハンドラ
+		 */
+		public var onTouchDown:Function;
+		
+		/**
+		 * タッチムーブ時のハンドラ
+		 */
+		public var onTouchMove:Function;
+		
+		/**
+		 * タッチアップ時のハンドラ
+		 */
+		public var onTouchUp:Function;
 		
 		/**
 		 * クリック時のハンドラ 
@@ -73,14 +143,24 @@ package harayoki.dragonbones
 		
 		/**
 		 * 長押し時のハンドラ
-		 * (未実装)
 		 */
-		public var onLongPress:Function;		
+		public var onLongPress:Function;
 		
 		/**
 		 * トグルモードで動かすか 
 		 */
-		public var isToggle:Boolean = false;
+		public var isToggleMode:Boolean = false;
+		
+		
+		/**
+		 * 選択状態か
+		 */
+		private var _isSelected:Boolean = false;
+		
+		/**
+		 * 選択状態を表現するか 
+		 */
+		private var _updateSelectedAnimation:Boolean = true;
 		
 		/**
 		 * 長押しと判定される秒数
@@ -91,8 +171,9 @@ package harayoki.dragonbones
 		 * @param armature ボタン化するアーマーチャー
 		 * @param autoDestruct armatureのdisplayObjectがStageから離れた際にこのボタンも廃棄するか
 		 * @param userData 任意のユーザが自由に使えるデータ
+         * @param 親のBone この情報がない場合、hideしていても親のアニメ中に見えている状態に戻ってしまう事がある
 		 */
-		public function ArmatureButton(armature:Armature=null,autoDestruct:Boolean=false,userData:*=null)
+		public function ArmatureButton(armature:Armature=null,autoDestruct:Boolean=false,userData:*=null,parentBone:Bone=null)
 		{			
 			_animationInfo = {};
 			if(armature)
@@ -100,6 +181,11 @@ package harayoki.dragonbones
 				applyArmature(armature,autoDestruct);
 			}
 			this.userData = userData;
+            _parentBone = parentBone;
+            if(_parentBone)
+            {
+                _orgScaleX = _parentBone.origin.scaleX;
+            }
 		}
 		
 		/**
@@ -108,14 +194,14 @@ package harayoki.dragonbones
 		 */
 		public function dispose(disposeArmature:Boolean=false):void
 		{
-			trace("ArmatureButton#destruct");
+			//trace("ArmatureButton#destruct");
 			if(disposeArmature && _armature)
 			{
 				WorldClock.clock.remove(_armature);
 				_armature.dispose();
 			}
-			
-			_cleanArmature();
+            
+            _cleanArmature();
 			_animationInfo = null;
 			_armature = null;
 			onTriggered = null;
@@ -129,8 +215,54 @@ package harayoki.dragonbones
 				_invalidateId = 0;
 			}
 			userData = null;
+            soundData = null;
+            
+            if(_parentBone)
+            {
+                _parentBone.origin.scaleX = _orgScaleX;
+            }
+            _parentBone = null;
+            
 		}
+
+        public function isShow():Boolean
+        {
+            return _isShow;
+        }
+        
+        public function show():void
+        {
+            _isShow = true;
+            if(baseDisplayObject)
+            {
+                if(_parentBone)
+                {
+                    _parentBone.origin.scaleX = _orgScaleX;
+                    baseDisplayObject.scaleX = _orgScaleX;
+                }
+                else
+                {
+                    baseDisplayObject.visible = _isShow;
+                }
+            }
+        }
 		
+        public function hide():void
+        {
+            _isShow  = false;
+            if(baseDisplayObject)
+            {
+                if(_parentBone)
+                {
+                    _parentBone.origin.scaleX = 0.0;
+                    baseDisplayObject.scaleX = 0.0;
+                }
+                else
+                {
+                    baseDisplayObject.visible = _isShow;
+                }
+            }
+        }
 		
 		//取りうるボタンState
 		private function get stateNames():Vector.<String>
@@ -211,22 +343,23 @@ package harayoki.dragonbones
 		}		
 		
 		/**
-		 * 現在選択中か(トグルモードでのみ有効)
+		 * 現在トグル状態で選択中か(トグルモードでのみ有効)
 		 */
-		public function get isSelected():Boolean
+		public function get isToggleSelected():Boolean
 		{
-			return _isSelected;
+			return _isToggleSelected;
 		}
 		
-		public function set isSelected(value:Boolean):void
+		public function set isToggleSelected(value:Boolean):void
 		{
-			if(_isSelected == value) return;
-			_isSelected = value;
+			if(_isToggleSelected == value) return;
+			_isToggleSelected = value;
 			onChange && onChange();
+            dispatchGlobalEvent && globalEventDispacher.dispatchEventWith(ArmatureButtonEvent.CHANGE,false,this);
 		}
 
 		/**
-		 * ボタン長押しを
+		 * ボタン長押しモードで動作させるか
 		 */
 		public function get isLongPressEnabled():Boolean
 		{
@@ -277,7 +410,7 @@ package harayoki.dragonbones
 			_currentState = value;
 			_draw();
 		}
-		
+        
 		//描画し直す (1フレームに１回だけの処理にまとめられる)
 		private function _draw():void
 		{
@@ -290,7 +423,7 @@ package harayoki.dragonbones
 					var animationName:String;
 					animationName = _animationInfo[_currentState];
 					
-					if(isSelected && (animationName == _animationInfo[STATE_TRIGGER] || animationName == _animationInfo[STATE_UP]))
+					if(isToggleSelected && (animationName == _animationInfo[STATE_TRIGGER] || animationName == _animationInfo[STATE_UP]))
 					{
 						animationName =  _animationInfo[STATE_DOWN];
 					}
@@ -315,6 +448,18 @@ package harayoki.dragonbones
 						_hitAreaObject.alpha = _debugHitArea ? 0.5 : 0.0;
 					}
 					
+					//処理が重そうなので毎回行わないようになっている
+					if(_updateSelectedAnimation)
+					{
+						_updateSelectedAnimation = false;
+						HELPER_ARMATURE_VECTOR.length = 0;
+						DragonBonesUtil.queryDescendantArmaturesByName(_armature,REG_ALL,HELPER_ARMATURE_VECTOR);
+						for each(var arm:Armature in HELPER_ARMATURE_VECTOR)
+						{
+							arm.animation.gotoAndPlay(_isSelected ? SELECTED_ANIMATION : NON_SELECTED_ANIMATION);
+						}
+					}
+					
 				},0);
 			}
 			
@@ -329,9 +474,9 @@ package harayoki.dragonbones
 		{
 			_cleanArmature();
 			_armature = armature;
+            DisplayObject(_armature.display).touchable = true;
 			_autoDestruct = autoDestruct;
 			_initArmature();
-			
 		}
 		
 		/**
@@ -341,8 +486,9 @@ package harayoki.dragonbones
 		public function resetButton():void
 		{
 			_touchPointID = -1;
-			isSelected = false;
+			_isToggleSelected = false;
 			currentState = STATE_UP;
+           _draw();
 		}
 		
 		private function _resetTouchState():void
@@ -360,11 +506,32 @@ package harayoki.dragonbones
 		 */
 		public function gotoAndPlayBySlotName(slotNamePattern:*,animationName:String):void
 		{
-			if(!_armature) return;
-
+			if(!_armature) return;			
 			HELPER_ARMATURE_VECTOR.length = 0;
 			DragonBonesUtil.gotoAndPlayBySlotName(_armature,slotNamePattern,animationName,HELPER_ARMATURE_VECTOR);
 		}
+        
+        /**
+         * TODO
+         * @param slotName
+         * @param disp
+         * 
+         */
+        public function addDisplayObjectAtSlot(slotName:String,disp:DisplayObject,hideSlot:Boolean=false):void
+        {
+            var targetArmature:Armature = DragonBonesUtil.findArmatureByName(_armature,slotName);
+            if(targetArmature && targetArmature.display)
+            {
+                var o:DisplayObject = targetArmature.display as DisplayObject;
+                disp.x = o.x;
+                disp.y = o.y;
+                o.parent.addChild(disp);
+                if(hideSlot)
+                {
+                    o.visible = false;
+                }
+            }
+        }
 		
 		//hit判定に使うdisplayObjectを返す
 		private function get hitAreaObject():DisplayObject
@@ -476,6 +643,7 @@ package harayoki.dragonbones
 				_hasLongPressed = true;
 				currentState = STATE_LONGPRESS;
 				onLongPress && onLongPress();
+                dispatchGlobalEvent && globalEventDispacher.dispatchEventWith(ArmatureButtonEvent.LONG_PRESS,false,this);
 			}
 		}
 		
@@ -512,6 +680,8 @@ package harayoki.dragonbones
 						_hasLongPressed = false;
 						hitAreaObject.addEventListener(Event.ENTER_FRAME, _handleLongPressEnterFrame);
 					}
+					onTouchDown && onTouchDown(touch);
+                    dispatchGlobalEvent && globalEventDispacher.dispatchEventWith(ArmatureButtonEvent.TOUCH_DOWN,false,this);
 					return;
 				}
 				touch = ev.getTouch(hitAreaObject, TouchPhase.HOVER);
@@ -552,23 +722,28 @@ package harayoki.dragonbones
 				{
 					currentState = STATE_UP;
 				}
+				onTouchMove && onTouchMove(touch);
+                dispatchGlobalEvent && globalEventDispacher.dispatchEventWith(ArmatureButtonEvent.TOUCH_MOVE,false,this);
 			}
 			else if(touch.phase == TouchPhase.ENDED)
 			{
 				_resetTouchState();
 				if(!_hasLongPressed && isHit)
 				{
-					if(isToggle)
+					if(isToggleMode)
 					{
-						isSelected = !isSelected;
+						isToggleSelected = !isToggleSelected;
 					}
-					currentState = isLongPressEnabled || isToggle ? STATE_UP : STATE_TRIGGER;
+					currentState = isLongPressEnabled || isToggleMode ? STATE_UP : STATE_TRIGGER;
 					onTriggered && onTriggered();
+                    dispatchGlobalEvent && globalEventDispacher.dispatchEventWith(ArmatureButtonEvent.TRIGGERED,false,this);
 				}
 				else
 				{
 					currentState = STATE_UP;
 				}
+				onTouchUp && onTouchUp(touch);
+                dispatchGlobalEvent && globalEventDispacher.dispatchEventWith(ArmatureButtonEvent.TOUCH_UP,false,this);
 			}
 		}
 		
